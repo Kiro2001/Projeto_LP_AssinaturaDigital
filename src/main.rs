@@ -1,11 +1,20 @@
 use num_bigint::BigUint;
 use num_bigint::{ToBigInt, RandBigInt};
 use num_traits::One;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-fn randomBigUint() -> BigUint {
+fn seed_BigUint() -> BigUint {
   let tempo = SystemTime::now().duration_since(UNIX_EPOCH).expect("Houston, we have a problem.");
   return BigUint::from( tempo.as_secs() );
+}
+
+fn random_BigUint() -> BigUint{
+  let modulus = BigUint::from(2_u32).pow(32);
+  let multiplier = BigUint::from(1664525_u32);
+  let increment = BigUint::from(1013904223_u32);
+  let seed = seed_BigUint();
+  let result = ( seed * multiplier + increment) % modulus;
+  return result; 
 }
 
 fn geraprimo() {
@@ -80,9 +89,12 @@ fn mod_inv(a: &BigUint, m: &BigUint) -> Option<BigUint> {
 }
 
 fn main() {
-  //Seed
-  let seed_do_tempo = randomBigUint();
+  // exemplo Seed
+  let seed_do_tempo = seed_BigUint();
   println!("seed do tempo: {}", seed_do_tempo);
+  // exemplo randon big u int
+  let randombiguint = random_BigUint();
+  println!("random big u int: {}", randombiguint);
   // Numeros primos grandes como exemplo
   let primo1 = BigUint::from(7919_u64);
   let primo2 = BigUint::from(6841_u64);
