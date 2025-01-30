@@ -1,0 +1,1 @@
+/home/lucas/Documents/unb/setimo_semestre/lp/Projeto_LP_AssinaturaDigital/target/debug/Projeto_LP: /home/lucas/Documents/unb/setimo_semestre/lp/Projeto_LP_AssinaturaDigital/src/assinatura.rs /home/lucas/Documents/unb/setimo_semestre/lp/Projeto_LP_AssinaturaDigital/src/main.rs
