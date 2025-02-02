@@ -5,6 +5,7 @@ use base64;
 use num_bigint::BigUint;
 use num_bigint::{ToBigInt, RandBigInt};
 use num_traits::{Num, One};
+use num_traits::Zero;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn seed_BigUint() -> BigUint {
@@ -20,6 +21,42 @@ fn random_BigUint() -> BigUint{
   let result = ( seed * multiplier + increment) % modulus;
   return result; 
 }
+
+fn fast_modular_exponentiation(mut base: BigUint, mut exponent : BigUint, modulus : BigUint) -> BigUint{
+  let mut res = BigUint::one();
+  base = base % &modulus;
+  while !exponent.is_zero() {
+    if ( &exponent & BigUint::one() ) == BigUint::one(){
+      res = (res * &base) % &modulus;
+    }
+    exponent = exponent >> 1;
+    base = (&base * &base) % &modulus;
+  }
+  return res;
+}
+
+/*def power(x, y, p) :
+    res = 1     # Initialize result
+
+    # Update x if it is more
+    # than or equal to p
+    x = x % p 
+    
+    if (x == 0) :
+        return 0
+
+    while (y > 0) :
+        
+        # If y is odd, multiply
+        # x with result
+        if ((y & 1) == 1) :
+            res = (res * x) % p
+
+        # y must be even now
+        y = y >> 1      # y = y/2
+        x = (x * x) % p
+        
+    return res*/
 
 fn geraprimo() {
   let mut rng = rand::thread_rng();
@@ -93,6 +130,8 @@ fn mod_inv(a: &BigUint, m: &BigUint) -> Option<BigUint> {
 }
 
 fn main() {
+  
+  /*
   let mut plaintext = "ola mundo";
   let big_int_chave_publica = BigUint::from_str_radix("3024309595713703550698328938426547750510840110938483057719575811129937029926494570183450198868757660108580326658974290247228261806106642702998274230160058231365816090767792512935089465870096780650873974295129125090296970508135929388876051172056916117469028829714113294710923714445659937549580085599831961458943367588175851446408177265065247829355804966847284109830128910203968234898743274495855231593970882374387709288378376479706249612458571409088141421694216408530267633459002673666677586408971582985911524380847298442321644376010893067789664872159028285694766156421350519060396343219088940759227101136668162033287", 10);
 
@@ -109,6 +148,9 @@ let res_assinatura_str = res_assinatura.as_str(); // Agora res_assinatura vive t
   let eh_a_mesma_assinatura = assinatura::verificar_assinatura(res_assinatura_str, plaintext, chave_privada);
 
   println!("{}", eh_a_mesma_assinatura);
+  */
+
+
   /*
   // exemplo Seed
   let seed_do_tempo = seed_BigUint();
