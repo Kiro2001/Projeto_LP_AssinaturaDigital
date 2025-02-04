@@ -74,8 +74,8 @@ fn decodificar_oaep(texto_cifrado: &[u8], k: usize, rotulo: &[u8]) -> Vec<u8> {
     db[i + 1..].to_vec()
 }
 
-pub fn cifrar(mensagem_em_bytes: &[u8], chave_publica: (BigUint, BigUint)) -> Vec<u8> {
-    let (n, e) = chave_publica;
+pub fn cifrar(mensagem_em_bytes: &[u8], chave: (BigUint, BigUint)) -> Vec<u8> {
+    let (n, e) = chave;
     let k = ((n.bits() + 7) / 8) as usize;
     let mensagem_codificada = codificar_oaep(mensagem_em_bytes, k, b"");
     let mensagem_cifrada = criptografar_rsa(BigUint::from_bytes_be(&mensagem_codificada), (n, e));
@@ -83,8 +83,8 @@ pub fn cifrar(mensagem_em_bytes: &[u8], chave_publica: (BigUint, BigUint)) -> Ve
     mensagem_cifrada.to_bytes_be().to_vec()
 }
 
-pub fn decifrar(texto_cifrado: &[u8], chave_privada: (BigUint, BigUint)) -> Vec<u8> {
-    let (n, d) = chave_privada;
+pub fn decifrar(texto_cifrado: &[u8], chave: (BigUint, BigUint)) -> Vec<u8> {
+    let (n, d) = chave;
     let k = ((n.bits() + 7) / 8) as usize;
     let mensagem_decodificada = descriptografar_rsa(BigUint::from_bytes_be(texto_cifrado), (n, d));
 
