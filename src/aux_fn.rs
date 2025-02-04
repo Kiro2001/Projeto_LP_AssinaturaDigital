@@ -1,4 +1,15 @@
 use num_bigint::BigUint;
+use base64::{DecodeError,decode,encode};
+
+pub fn codificar_base64(assinatura: &BigUint) -> String {
+    let bytes = assinatura.to_bytes_be();
+    base64::encode(bytes)
+}
+
+pub fn decodificar_base64(assinatura: &str) -> Result<Vec<u8>, DecodeError>{
+    return decode(assinatura);
+}
+
 /*
 pub fn fast_mod_exp(base : BigUint, exponent : BigUint, modulus : BigUint) -> BigUint{
 	let mut result = BigUint::from(1u32);
