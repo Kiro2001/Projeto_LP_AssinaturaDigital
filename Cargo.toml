@@ -9,5 +9,6 @@ num-bigint = { version = "0.4", features = ["rand"] }
 num-integer = "0.1"
 num-traits = "0.2"
 sha3 = "0.10.8"
+sha1 = "0.10"
 base64 = "0.22.1"
 
