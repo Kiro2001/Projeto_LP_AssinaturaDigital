@@ -11,4 +11,10 @@ num-traits = "0.2"
 sha3 = "0.10.8"
 sha1 = "0.10"
 base64 = "0.22.1"
+lopdf = "0.31"
+
+[features]
+default = ["nom_parser"] # Ativa "nom_parser" por padrão
+async = [] # Define a feature "async"
+nom_parser = [] # Define a feature "nom_parser"
 
