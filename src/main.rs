@@ -154,7 +154,7 @@ fn main() {
   let signature = pdf_manipulation::extract_signature_from_pdf(&path_to_signed_pdf);
   let pdf_content = pdf_manipulation::get_pdf_content(&path_to_signed_pdf);
   let hashed_signed_pdf = hash::hash_content(&pdf_content);
-  let signature_em_bytes = aux_fn::decodificar_base64(&signature).unwrap();
+  let signature_em_bytes = aux_fn::decodificar_base64(signature);
 
   let eh_a_mesma_assinatura = assinatura::verificar_assinatura(&signature_em_bytes, &hashed_signed_pdf, chave_privada);
 
