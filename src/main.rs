@@ -9,9 +9,12 @@ use num_traits::{Num, One};
 use num_traits::Zero;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+static mut add_in_seed : u128 = 0;
+
 fn seed_BigUint() -> BigUint {
   let tempo = SystemTime::now().duration_since(UNIX_EPOCH).expect("Houston, we have a problem.");
-  return BigUint::from( tempo.as_secs() );
+  unsafe { add_in_seed += 1 };
+  return BigUint::from( tempo.as_millis() + unsafe{add_in_seed}); 
 }
 
 fn random_BigUint() -> BigUint{
@@ -44,7 +47,7 @@ fn fast_modular_exponentiation(mut base: BigUint, mut exponent : BigUint, modulu
   return res;
 }
 
-fn miller_rabin_test(d: &BigUint, n: &BigUint) -> bool {
+fn miller_rabin_test(n: &BigUint, d: &BigUint) -> bool {
   let random_number = random_BigUint_within_range(BigUint::from(2_u32), (n - BigUint::from(2_u32)));
   let mut x = fast_modular_exponentiation(random_number, d.clone(), n.clone());
   if x == BigUint::one() || x == n - BigUint::one() {
@@ -62,6 +65,41 @@ fn miller_rabin_test(d: &BigUint, n: &BigUint) -> bool {
       }
   }
   false
+}
+
+fn iterate_miller_rabin(n : BigUint, k: usize) -> bool {
+
+  if n <= BigUint::one(){
+    return false;
+  }
+  if n == BigUint::from(2_u32) || n == BigUint::from(3_u32){
+    return true;
+  }
+
+  let mut d = n.clone() - BigUint::one();
+  while(d.clone() % BigUint::from(2_u32) == BigUint::zero()){
+    d = d / BigUint::from(2_u32);
+  }
+
+  for _i in 0..k{
+    if !miller_rabin_test(&n,&d){
+      return false;
+    }
+  }
+
+  return true;
+
+}
+
+fn gera_primo() -> BigUint{
+  let mut n = BigUint::one();
+  loop {
+    n = random_BigUint();
+    if iterate_miller_rabin(n.clone(), 3){
+      break;
+    }
+  }
+  return n;
 }
 
 fn geraprimo() {
@@ -136,6 +174,7 @@ fn mod_inv(a: &BigUint, m: &BigUint) -> Option<BigUint> {
 }
 
 fn main() {
+  /*
   let big_int_chave_publica = BigUint::from_str_radix("3024309595713703550698328938426547750510840110938483057719575811129937029926494570183450198868757660108580326658974290247228261806106642702998274230160058231365816090767792512935089465870096780650873974295129125090296970508135929388876051172056916117469028829714113294710923714445659937549580085599831961458943367588175851446408177265065247829355804966847284109830128910203968234898743274495855231593970882374387709288378376479706249612458571409088141421694216408530267633459002673666677586408971582985911524380847298442321644376010893067789664872159028285694766156421350519060396343219088940759227101136668162033287", 10);
   let exp_chave_publica = BigUint::from_str_radix("65537", 10);
   let chave_privada = (BigUint::from_str_radix("3024309595713703550698328938426547750510840110938483057719575811129937029926494570183450198868757660108580326658974290247228261806106642702998274230160058231365816090767792512935089465870096780650873974295129125090296970508135929388876051172056916117469028829714113294710923714445659937549580085599831961458943367588175851446408177265065247829355804966847284109830128910203968234898743274495855231593970882374387709288378376479706249612458571409088141421694216408530267633459002673666677586408971582985911524380847298442321644376010893067789664872159028285694766156421350519060396343219088940759227101136668162033287",10).unwrap(), BigUint::from_str_radix("1455509848763384404116392160869611709398697040436863056342724577854484396003960590783163750591566372545046799260733754805496537919441073248627013251956580201649590388923919978798017255031642012275649114595460087194608492100601421317035255352210921941210165834841583341142823822837947420392317400550899490308874564261227800011250452012411108859014569640319249925934531446367109750219438961898058824858731485591154297950340155890382429169161906358931179657197056718723619308946020960957632154677288685321080485292513731404426600907600807401755688407328918424857290096373480836436095680163062662523446498348475609753921", 10).unwrap());
@@ -159,7 +198,7 @@ fn main() {
   let eh_a_mesma_assinatura = assinatura::verificar_assinatura(&signature_em_bytes, &hashed_signed_pdf, chave_privada);
 
   println!("{}", eh_a_mesma_assinatura);
-
+  */
 
 
   /*
@@ -175,19 +214,24 @@ let res_assinatura_str = res_assinatura.as_str(); // Agora res_assinatura vive t
   */
 
 
-  /*
+  
   // exemplo Seed
   let seed_do_tempo = seed_BigUint();
   println!("seed do tempo: {}", seed_do_tempo);
   // exemplo randon big u int
   let randombiguint = random_BigUint();
   println!("random big u int: {}", randombiguint);
+  // exemplo gera primo
+  let mr_prime = gera_primo();
+  let mr_prime2 = gera_primo();
+  println!("Valor dos mr. primos: {}, {}", mr_prime, mr_prime2);
   // Numeros primos grandes como exemplo
   let primo1 = BigUint::from(7919_u64);
   let primo2 = BigUint::from(6841_u64);
   println!("Numero primo 1: {:?}", primo1);
   println!("Numero primo 2: {:?}", primo2);
 
+  /*
   let (chave_publica, chave_privada) = chaves_rsa(primo1, primo2);
   println!("Chave Pública: {:?}", chave_publica);
   println!("Chave Privada: {:?}", chave_privada);
