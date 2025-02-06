@@ -12,6 +12,7 @@ pub fn string_to_num(text : String) -> Vec<u8> {
     return lcharn;
 }
 
+
 pub fn codificar_b64(text : Vec <u8>) -> String {
     let conjcharstring : String = String::from("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
     let conjchar: Vec<char> = conjcharstring.chars().collect();
@@ -57,4 +58,54 @@ pub fn codificar_b64(text : Vec <u8>) -> String {
     }
 
     return strb64;
+}
+
+pub fn decodificar_b64(text:String) -> Vec <u8> {
+    let conjcharstring : String = String::from("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+    let conjchar: Vec<char> = conjcharstring.chars().collect();
+    let textocodif:Vec<char> = text.chars().collect();
+    let mut textoclaro: Vec<u8> = Vec::new();
+    let mut padding: u32 = 0;
+    let ind: usize = textocodif.len();
+    
+    for i in 1..ind{
+        if textocodif[ind - i] != '=' {
+            break;
+        }
+        padding=padding + 1;
+    }
+
+
+    for i in (0..ind - (padding as usize)).step_by(4){
+        let mut chars: u32 = 0;
+        let mut cont: u32=0;
+        for j in i .. std::cmp::min(i + 4,ind - (padding as usize)){
+            let valat: u32= conjchar.iter().position(|&c| c == textocodif[j]).unwrap() as u32;
+            chars = chars << 6;
+            chars = chars | valat;
+            cont = cont + 1;
+        }
+        chars = chars << 8;
+
+        if cont != 4{
+            chars = chars << (padding * 6);
+            let arrchars = chars.to_be_bytes();
+            for k in 0..(3 - padding){
+                textoclaro.push(arrchars[k as usize]);
+            }
+        }
+        else{
+            let arrchars = chars.to_be_bytes();
+            for k in 0..(3){
+                textoclaro.push(arrchars[k as usize]);
+            } 
+        }
+        
+
+
+            
+    }
+    
+    return textoclaro;
+
 }
