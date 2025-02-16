@@ -11,13 +11,27 @@ use num_bigint::BigUint;
 use num_traits::Num;
 
 fn main() {
-  println!("Insira o caminho para seu arquivo: ");
-
   let mut path_to_pdf = String::new();
   let mut operacao = String::new();
-  io::stdin().read_line(&mut path_to_pdf).expect("Erro ao ler caminho");
-  path_to_pdf = path_to_pdf.trim().to_string();
-  let pdf_content = pdf_manipulation::get_pdf_content(&path_to_pdf);
+  let pdf_content: Vec<u8>;
+
+  loop{
+    println!("Insira o caminho para seu arquivo: ");
+    io::stdin().read_line(&mut path_to_pdf).expect("Erro ao ler caminho");
+    path_to_pdf = path_to_pdf.trim().to_string();
+    match pdf_manipulation::get_pdf_content(&path_to_pdf){
+      Ok(content) => {
+        pdf_content = content;
+        break;
+      },
+      Err(e) => {
+        println!("Erro ao ler PDF, tente novamente!");
+        path_to_pdf = String::new();
+      }
+    }
+
+
+  }
 
   println!("Deseja assinar documento, verificar assinatura ou modificar? [A|V|M]: ");
   io::stdin().read_line(&mut operacao).expect("Erro ao ler opção");
@@ -32,7 +46,6 @@ fn main() {
 
     (chave_publica,chave_privada) = rsa::chaves_rsa(mr_prime, mr_prime2);
 
-    let pdf_content = pdf_manipulation::get_pdf_content(&path_to_pdf);
     let hashed_pdf = hash::hash_content(&pdf_content);
     let res_assinatura = assinatura::assinar(&hashed_pdf, chave_privada);
     pdf_manipulation::attach_signature_to_pdf(&path_to_pdf, &res_assinatura);

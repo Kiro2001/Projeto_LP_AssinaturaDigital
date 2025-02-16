@@ -3,8 +3,8 @@ use lopdf::dictionary;
 use lopdf::{Object, Stream};
 use lopdf::content::{Content, Operation};
 
-pub fn get_pdf_content(file_path: & str) -> Vec<u8>{
-    let mut doc = Document::load(file_path).expect("Falha ao abrir o PDF");
+pub fn get_pdf_content(file_path: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let mut doc = Document::load(file_path)?; // Propaga o erro em vez de usar expect()
 
     // Remover metadados para que não afetem o hash
     doc.trailer.remove(b"Info");
@@ -13,8 +13,9 @@ pub fn get_pdf_content(file_path: & str) -> Vec<u8>{
 
     // Converter para bytes sem os metadados
     let mut raw_pdf = Vec::new();
-    doc.save_to(&mut raw_pdf).expect("Falha ao ler conteudo do PDF");
-    raw_pdf
+    doc.save_to(&mut raw_pdf)?; // Propaga o erro
+
+    Ok(raw_pdf)
 }
 
 pub fn extract_signature_from_pdf(pdf_path: &str) -> String{

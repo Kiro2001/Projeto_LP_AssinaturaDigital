@@ -2,9 +2,9 @@ use super::rsa::{criptografar_rsa, descriptografar_rsa};
 use super::aux_fn::codificar_base64;
 use num_bigint::BigUint;
 
-pub fn assinar(hashed_content: &Vec<u8>, chave_publica: (BigUint, BigUint)) -> String{
+pub fn assinar(hashed_content: &Vec<u8>, chave: (BigUint, BigUint)) -> String{
     let mensagem = BigUint::from_bytes_be(&hashed_content);
-    let assinatura = criptografar_rsa(mensagem, chave_publica);
+    let assinatura = criptografar_rsa(mensagem, chave);
     codificar_base64(assinatura.to_bytes_be())
 }
 
