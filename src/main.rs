@@ -26,11 +26,28 @@ fn random_BigUint() -> BigUint{
   return result; 
 }
 
+fn random_BigUint_1024() -> BigUint {
+  let mut res = BigUint::zero();
+  for i in 0..32{
+    let aux = random_BigUint() << (32*i);
+    res = res | aux;
+  }
+  res
+}
+
 fn random_BigUint_within_range(n: BigUint, m: BigUint) -> BigUint {
   if n>=m{
       panic!("n has to be lesser than m!");
   }
   let res = &n + random_BigUint() % (m - &n + BigUint::one());
+  return res;
+}
+
+fn random_BigUint_1024_within_range(n : BigUint, m : BigUint) -> BigUint {
+  if n>=m{
+    panic!("n has to be lesser than m!");
+  }
+  let res = &n + random_BigUint_1024() % (m - &n + BigUint::one());
   return res;
 }
 
@@ -94,7 +111,7 @@ fn iterate_miller_rabin(n : BigUint, k: usize) -> bool {
 fn gera_primo() -> BigUint{
   let mut n = BigUint::one();
   loop {
-    n = random_BigUint();
+    n = random_BigUint_1024();
     if iterate_miller_rabin(n.clone(), 3){
       break;
     }
