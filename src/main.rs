@@ -2,264 +2,69 @@ mod assinatura;
 mod pdf_manipulation;
 mod hash;
 mod aux_fn;
+mod primos;
+mod rsa;
+
+use std::io;
 
 use num_bigint::BigUint;
-use num_bigint::RandBigInt;
-use num_traits::{Num, One};
-use num_traits::Zero;
-use std::time::{SystemTime, UNIX_EPOCH};
-
-static mut add_in_seed : u128 = 0;
-
-fn seed_BigUint() -> BigUint {
-  let tempo = SystemTime::now().duration_since(UNIX_EPOCH).expect("Houston, we have a problem.");
-  unsafe { add_in_seed += 1 };
-  return BigUint::from( tempo.as_millis() + unsafe{add_in_seed}); 
-}
-
-fn random_BigUint() -> BigUint{
-  let modulus = BigUint::from(2_u32).pow(32);
-  let multiplier = BigUint::from(1664525_u32);
-  let increment = BigUint::from(1013904223_u32);
-  let seed = seed_BigUint();
-  let result = ( seed * multiplier + increment) % modulus;
-  return result; 
-}
-
-fn random_BigUint_1024() -> BigUint {
-  let mut res = BigUint::zero();
-  for i in 0..32{
-    let aux = random_BigUint() << (32*i);
-    res = res | aux;
-  }
-  res
-}
-
-fn random_BigUint_within_range(n: BigUint, m: BigUint) -> BigUint {
-  if n>=m{
-      panic!("n has to be lesser than m!");
-  }
-  let res = &n + random_BigUint() % (m - &n + BigUint::one());
-  return res;
-}
-
-fn random_BigUint_1024_within_range(n : BigUint, m : BigUint) -> BigUint {
-  if n>=m{
-    panic!("n has to be lesser than m!");
-  }
-  let res = &n + random_BigUint_1024() % (m - &n + BigUint::one());
-  return res;
-}
-
-fn fast_modular_exponentiation(mut base: BigUint, mut exponent : BigUint, modulus : BigUint) -> BigUint{
-  let mut res = BigUint::one();
-  base = base % &modulus;
-  while !exponent.is_zero() {
-    if ( &exponent & BigUint::one() ) == BigUint::one(){
-      res = (res * &base) % &modulus;
-    }
-    exponent = exponent >> 1;
-    base = (&base * &base) % &modulus;
-  }
-  return res;
-}
-
-fn miller_rabin_test(n: &BigUint, d: &BigUint) -> bool {
-  let random_number = random_BigUint_within_range(BigUint::from(2_u32), (n - BigUint::from(2_u32)));
-  let mut x = fast_modular_exponentiation(random_number, d.clone(), n.clone());
-  if x == BigUint::one() || x == n - BigUint::one() {
-      return true;
-  }
-  let mut d = d.clone();
-  while d != n - BigUint::one() {
-      x = (&x * &x) % n;
-      d = d * 2_u32;
-      if x == BigUint::one() {
-          return false;
-      }
-      if x == n - BigUint::one() {
-          return true;
-      }
-  }
-  false
-}
-
-fn iterate_miller_rabin(n : BigUint, k: usize) -> bool {
-
-  if n <= BigUint::one(){
-    return false;
-  }
-  if n == BigUint::from(2_u32) || n == BigUint::from(3_u32){
-    return true;
-  }
-
-  let mut d = n.clone() - BigUint::one();
-  while(d.clone() % BigUint::from(2_u32) == BigUint::zero()){
-    d = d / BigUint::from(2_u32);
-  }
-
-  for _i in 0..k{
-    if !miller_rabin_test(&n,&d){
-      return false;
-    }
-  }
-
-  return true;
-
-}
-
-fn gera_primo() -> BigUint{
-  let mut n = BigUint::one();
-  loop {
-    n = random_BigUint_1024();
-    if iterate_miller_rabin(n.clone(), 3){
-      break;
-    }
-  }
-  return n;
-}
-
-fn geraprimo() {
-  let mut rng = rand::thread_rng();
-  let num1: Vec<u32> = vec![2];
-  let num2: Vec<u32> = vec![2];
-  let mut max = BigUint::new(num1);
-  let mut min = BigUint::new(num2);
-  max = max.pow(1024);
-  min = min.pow(1023);
-  let ale = rng.gen_biguint_range(&min, &max);
-  
-  println!("{}", ale);
-}
-
-// Funcao para gerar as chaves RSA (publica e privada)
-fn chaves_rsa(primo1: BigUint, primo2: BigUint) -> ((BigUint, BigUint), (BigUint, BigUint)) {
-  let n = &primo1 * &primo2;
-  let phi = (&primo1 - BigUint::from(1_u64)) * (&primo2 - BigUint::from(1_u64));
-  
-  let e = BigUint::from(65537_u64); // Expoente de criptografia (valor padrao para e)
-  let d = mod_inv(&e, &phi).expect("Erro ao calcular o inverso modular"); // Expoente de descriptografia
-
-  let chave_publica = (n.clone(), e);
-  let chave_privada = (n, d);
-
-  (chave_publica, chave_privada)
-}
-
-// Funcao para criptografar uma mensagem usando a chave publica
-fn criptografar_rsa(mensagem: BigUint, chave_publica: (BigUint, BigUint)) -> BigUint {
-  let (n, e) = chave_publica;
-  mensagem.modpow(&e, &n) // mensagem^e mod n
-}
-
-// Funcao para descriptografar uma mensagem criptografada usando a chave privada
-fn descriptografar_rsa(msg_cifrada: BigUint, chave_privada: (BigUint, BigUint)) -> BigUint {
-  let (n, d) = chave_privada;
-  msg_cifrada.modpow(&d, &n) // msg_cifrada^d mod n
-}
-
-// Funcao para calcular o inverso modular de `a` em relação a `m`
-fn mod_inv(a: &BigUint, m: &BigUint) -> Option<BigUint> {
-  use num_bigint::BigInt;
-  use num_integer::Integer;
-  use num_traits::{One, Zero};
-
-  let mut t = BigInt::zero();
-  let mut new_t = BigInt::one();
-  let mut r = BigInt::from(m.clone());
-  let mut new_r = BigInt::from(a.clone());
-
-  // Algoritmo de Euclides Estendido
-  while new_r != BigInt::zero() {
-    let quotient = &r / &new_r;
-
-    let temp_t = t.clone();
-    t = new_t.clone();
-    new_t = temp_t - &quotient * &new_t;
-
-    let temp_r = r.clone();
-    r = new_r.clone();
-    new_r = temp_r - &quotient * &new_r;
-  }
-
-  if r != BigInt::one() {
-    None
-  } else {
-    let result = (t % &BigInt::from(m.clone()) + &BigInt::from(m.clone())) % &BigInt::from(m.clone());
-    Some(result.to_biguint().unwrap())
-  }
-}
+use num_traits::Num;
 
 fn main() {
-  /*
-  let big_int_chave_publica = BigUint::from_str_radix("3024309595713703550698328938426547750510840110938483057719575811129937029926494570183450198868757660108580326658974290247228261806106642702998274230160058231365816090767792512935089465870096780650873974295129125090296970508135929388876051172056916117469028829714113294710923714445659937549580085599831961458943367588175851446408177265065247829355804966847284109830128910203968234898743274495855231593970882374387709288378376479706249612458571409088141421694216408530267633459002673666677586408971582985911524380847298442321644376010893067789664872159028285694766156421350519060396343219088940759227101136668162033287", 10);
-  let exp_chave_publica = BigUint::from_str_radix("65537", 10);
-  let chave_privada = (BigUint::from_str_radix("3024309595713703550698328938426547750510840110938483057719575811129937029926494570183450198868757660108580326658974290247228261806106642702998274230160058231365816090767792512935089465870096780650873974295129125090296970508135929388876051172056916117469028829714113294710923714445659937549580085599831961458943367588175851446408177265065247829355804966847284109830128910203968234898743274495855231593970882374387709288378376479706249612458571409088141421694216408530267633459002673666677586408971582985911524380847298442321644376010893067789664872159028285694766156421350519060396343219088940759227101136668162033287",10).unwrap(), BigUint::from_str_radix("1455509848763384404116392160869611709398697040436863056342724577854484396003960590783163750591566372545046799260733754805496537919441073248627013251956580201649590388923919978798017255031642012275649114595460087194608492100601421317035255352210921941210165834841583341142823822837947420392317400550899490308874564261227800011250452012411108859014569640319249925934531446367109750219438961898058824858731485591154297950340155890382429169161906358931179657197056718723619308946020960957632154677288685321080485292513731404426600907600807401755688407328918424857290096373480836436095680163062662523446498348475609753921", 10).unwrap());
+  println!("Insira o caminho para seu arquivo: ");
 
-  let path_to_pdf = "../teste.pdf";
-
+  let mut path_to_pdf = String::new();
+  let mut operacao = String::new();
+  io::stdin().read_line(&mut path_to_pdf).expect("Erro ao ler caminho");
+  path_to_pdf = path_to_pdf.trim().to_string();
   let pdf_content = pdf_manipulation::get_pdf_content(&path_to_pdf);
-  let hashed_pdf = hash::hash_content(&pdf_content);
-  let res_assinatura = assinatura::assinar(&hashed_pdf, (big_int_chave_publica.unwrap(), exp_chave_publica.unwrap()));
-  pdf_manipulation::attach_signature_to_pdf(&path_to_pdf, &res_assinatura);
+
+  println!("Deseja assinar documento, verificar assinatura ou modificar? [A|V|M]: ");
+  io::stdin().read_line(&mut operacao).expect("Erro ao ler opção");
+
+   if operacao.trim() == "A" {
+    let seed_do_tempo = primos::seed_BigUint();
+    let mr_prime = primos::gera_primo();
+    let mr_prime2 = primos::gera_primo();
+
+    let chave_privada;
+    let chave_publica;
+
+    (chave_publica,chave_privada) = rsa::chaves_rsa(mr_prime, mr_prime2);
+
+    let pdf_content = pdf_manipulation::get_pdf_content(&path_to_pdf);
+    let hashed_pdf = hash::hash_content(&pdf_content);
+    let res_assinatura = assinatura::assinar(&hashed_pdf, chave_privada);
+    pdf_manipulation::attach_signature_to_pdf(&path_to_pdf, &res_assinatura);
+
+    println!("Documento assinado");
+    println!("Chave publica para verificação: ({}, {})", chave_publica.0, chave_publica.1);
+  }else if operacao.trim() == "V"{
+    let mut modulo_chave_publica = String::new();
+    let mut exp = String::new(); 
+    println!("Insira o modulo da chave pública: ");
+    io::stdin().read_line(&mut modulo_chave_publica).expect("Erro ao ler modulo");
+    modulo_chave_publica = modulo_chave_publica.trim().to_string();
+
+    println!("Insira o expoente da chave pública: ");
+    io::stdin().read_line(&mut exp).expect("Erro ao ler expoente");
+    exp = exp.trim().to_string();
   
+    let chave_publica = (BigUint::from_str_radix(&modulo_chave_publica, 10).expect("Erro ao obter modulo"), BigUint::from_str_radix(&exp, 10).expect("Erro ao obter expoente"));
 
-  let path_to_signed_pdf = "./documento_assinado.pdf";
-  pdf_manipulation::modifica_pdf(&path_to_signed_pdf);
-
-  let signature = pdf_manipulation::extract_signature_from_pdf(&path_to_signed_pdf);
-  let pdf_content = pdf_manipulation::get_pdf_content(&path_to_signed_pdf);
-  let hashed_signed_pdf = hash::hash_content(&pdf_content);
-  let signature_em_bytes = aux_fn::decodificar_base64(signature);
-
-  let eh_a_mesma_assinatura = assinatura::verificar_assinatura(&signature_em_bytes, &hashed_signed_pdf, chave_privada);
-
-  println!("{}", eh_a_mesma_assinatura);
-  */
-
-
-  /*
-  let res_assinatura = assinatura::assinar(plaintext, (big_int_chave_publica.unwrap(), exp_chave_publica.unwrap())).unwrap();
-let res_assinatura_str = res_assinatura.as_str(); // Agora res_assinatura vive tempo suficiente
-  plaintext = "ola pessoal";
-
-  println!("{}", res_assinatura);
-
-  let eh_a_mesma_assinatura = assinatura::verificar_assinatura(res_assinatura_str, plaintext, chave_privada);
-
-  println!("{}", eh_a_mesma_assinatura);
-  */
-
-
+    let signature = pdf_manipulation::extract_signature_from_pdf(&path_to_pdf);
+    let hashed_signed_pdf = hash::hash_content(&pdf_content);
+    let signature_em_bytes = aux_fn::decodificar_base64(signature);
   
-  // exemplo Seed
-  let seed_do_tempo = seed_BigUint();
-  println!("seed do tempo: {}", seed_do_tempo);
-  // exemplo randon big u int
-  let randombiguint = random_BigUint();
-  println!("random big u int: {}", randombiguint);
-  // exemplo gera primo
-  let mr_prime = gera_primo();
-  let mr_prime2 = gera_primo();
-  println!("Valor dos mr. primos: {}, {}", mr_prime, mr_prime2);
-  // Numeros primos grandes como exemplo
-  let primo1 = BigUint::from(7919_u64);
-  let primo2 = BigUint::from(6841_u64);
-  println!("Numero primo 1: {:?}", primo1);
-  println!("Numero primo 2: {:?}", primo2);
+    let eh_a_mesma_assinatura = assinatura::verificar_assinatura(&signature_em_bytes, &hashed_signed_pdf, chave_publica);
 
-  /*
-  let (chave_publica, chave_privada) = chaves_rsa(primo1, primo2);
-  println!("Chave Pública: {:?}", chave_publica);
-  println!("Chave Privada: {:?}", chave_privada);
-
-  // Mensagem como exemplo
-  let mensagem = BigUint::from(42_u64);
-
-  let msg_cifrada = criptografar_rsa(mensagem, chave_publica);
-  println!("Mensagem criptografada: {}", msg_cifrada);
-
-  let mensagem_decriptada = descriptografar_rsa(msg_cifrada, chave_privada);
-  println!("Mensagem decriptada: {}", mensagem_decriptada);
-  */
+    if eh_a_mesma_assinatura{
+      println!("Documento valido");
+    }else{
+      println!("Documento invalido");
+    }
+  }else{
+    pdf_manipulation::modifica_pdf(&path_to_pdf);
+  }
+  
 }
